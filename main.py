@@ -5,10 +5,6 @@ import base64
 import openai
 import pdfplumber
 import fitz
-from openpyxl import Workbook
-import smtplib
-from email.message import EmailMessage
-from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -30,12 +26,14 @@ def pdf_to_text_or_ocr(pdf_path):
                     if page_text:
                         text += page_text + "\n"
                 except Exception as e:
-                    print(f"[Error] Página {page_number} no legible con pdfplumber: {e}")
+                    print(f"[Error] Página {page_number} no legible"
+                          f" con pdfplumber: {e}")
     except Exception as e:
         print(f"[Error] No se pudo abrir {pdf_path} con pdfplumber: {e}")
 
     if not text.strip():
-        print(f"⚠️ No se detectó texto en {pdf_path}, aplicando OCR con OpenAI...")
+        print(f"⚠️ No se detectó texto en {pdf_path}, aplicando"
+              " OCR con OpenAI...")
         try:
             doc = fitz.open(pdf_path)
             for page_num in range(len(doc)):
@@ -45,7 +43,8 @@ def pdf_to_text_or_ocr(pdf_path):
                     buffer = io.BytesIO()
                     img_bytes = pix.tobytes("png")
                     buffer.write(img_bytes)
-                    img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                    img_str = base64.b64encode(
+                        buffer.getvalue()).decode("utf-8")
 
                     response = openai.chat.completions.create(
                         model="gpt-4o-mini",
@@ -53,8 +52,12 @@ def pdf_to_text_or_ocr(pdf_path):
                             {
                                 "role": "user",
                                 "content": [
-                                    {"type": "text", "text": "Extrae TODO el texto de esta página del CV:"},
-                                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_str}"}}
+                                    {"type": "text", "text":
+                                      "Extrae TODO el texto"
+                                      " de esta página del CV:"},
+                                    {"type": "image_url", "image_url":
+                                      {"url":
+                                        f"data:image/png;base64,{img_str}"}}
                                 ]
                             }
                         ]
@@ -63,9 +66,11 @@ def pdf_to_text_or_ocr(pdf_path):
                     if page_text:
                         text += page_text + "\n"
                 except Exception as e:
-                    print(f"[Error] No se pudo procesar la página {page_num+1} con OCR: {e}")
+                    print(f"[Error] No se pudo procesar"
+                          " la página {page_num+1} con OCR: {e}")
         except Exception as e:
-            print(f"[Error] No se pudo abrir {pdf_path} con PyMuPDF para OCR: {e}")
+            print(f"[Error] No se pudo abrir {pdf_path}"
+                  " con PyMuPDF para OCR: {e}")
 
     return text.strip()
 
@@ -91,10 +96,14 @@ def get_json_from_openai(content):
     2. Evalúa si el candidato es adecuado para el puesto:
 
    Requisitos mínimos para ser candidato:
-   - Tener experiencia laboral mínima de 2 años en áreas administrativas, gestión o relacionadas con IA.
-   - Contar con al menos 1 certificación o curso en IA, administración o áreas afines.
-   - Mostrar nivel intermedio o avanzado en al menos 1 idioma (inglés preferente).
-   - Incluir al menos 3 habilidades técnicas o administrativas relevantes al puesto.
+   - Tener experiencia laboral mínima de 2 años en áreas 
+    administrativas, gestión o relacionadas con IA.
+   - Contar con al menos 1 certificación o curso en IA,
+     administración o áreas afines.
+   - Mostrar nivel intermedio o avanzado en al
+     menos 1 idioma (inglés preferente).
+   - Incluir al menos 3 habilidades técnicas o
+     administrativas relevantes al puesto.
 
    Skills específicos requeridos:
    - Carreras afines:
@@ -105,7 +114,8 @@ def get_json_from_openai(content):
    - Perfil:
      - Graduado o último semestre de la carrera
      - Experiencia en gestión de proyectos
-     - Experiencia en lenguajes de programación (Python, JavaScript, Visual Basic, HTML, PHP)
+     - Experiencia en lenguajes de programación (Python, 
+     JavaScript, Visual Basic, HTML, PHP)
      - Conocimiento en bases de datos
      - Conocimiento en IA
      - Inglés intermedio o avanzado
@@ -113,8 +123,11 @@ def get_json_from_openai(content):
    - Disponibilidad: Tiempo completo
 
    - Si cumple con lo anterior, "candidato": true.
-   - Si no cumple, "candidato": false y en "motivo_no_candidato" explica la razón principal (ejemplo: falta de experiencia, falta de certificaciones, falta de idiomas, carrera no afín, etc.).
-   - De los cursos encontrados en el CV, solo devuelve los 10 más relevantes al perfil buscado. 
+   - Si no cumple, "candidato": false y en "motivo_no_candidato"
+     explica la razón principal (ejemplo: falta de experiencia,
+       falta de certificaciones, falta de idiomas, carrera no afín, etc.).
+   - De los cursos encontrados en el CV, solo devuelve
+     los 10 más relevantes al perfil buscado. 
 
     3. Devuelve todo en un JSON válido con esta estructura:
 
@@ -158,6 +171,7 @@ app = FastAPI(title="API Procesamiento de CVs", version="1.0")
 
 
 @app.post("/procesar-cv/")
+#Functions Asincrona de Documentos Parallelo
 async def procesar_cv(file: UploadFile = File(...)):
     try:
         # Guardar temporalmente el PDF
