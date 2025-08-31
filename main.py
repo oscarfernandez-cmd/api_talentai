@@ -20,7 +20,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cv_processor")
 
 # === Funciones ===
-
 def extract_text_pdf(pdf_path: str) -> str:
     """Extrae texto de un PDF usando pdfplumber."""
     text = ""
@@ -38,12 +37,13 @@ def extract_text_pdf(pdf_path: str) -> str:
     return text.strip()
 
 
+# Funcion que permite extraer texto
 def extract_text_ocr(pdf_path: str) -> str:
     """Extrae texto de un PDF mediante OCR usando OpenAI."""
     text = ""
     try:
         doc = fitz.open(pdf_path)
-
+        # Funcion que procesa las imagenes
         def process_page(page_num: int) -> str:
             try:
                 page = doc[page_num]
@@ -56,8 +56,10 @@ def extract_text_ocr(pdf_path: str) -> str:
                     messages=[{
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": "Extrae TODO el texto de esta página del CV:"},
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_str}"}}
+                            {"type": "text", "text": "Extrae TODO el"
+                             " texto de esta página del CV:"},
+                            {"type": "image_url", "image_url":
+                              {"url": f"data:image/png;base64,{img_str}"}}
                         ]
                     }]
                 )
@@ -76,7 +78,7 @@ def extract_text_ocr(pdf_path: str) -> str:
 
     return text.strip()
 
-
+# Funcion OCR
 def pdf_to_text_or_ocr(pdf_path: str) -> str:
     """Extrae texto de un PDF o aplica OCR si está vacío."""
     text = extract_text_pdf(pdf_path)
@@ -85,76 +87,84 @@ def pdf_to_text_or_ocr(pdf_path: str) -> str:
         text = extract_text_ocr(pdf_path)
     return text
 
-
+# Funcion de OpenAI
 def get_json_from_openai(content: str) -> dict:
     """Envía el contenido a OpenAI para generar JSON estructurado."""
     prompt = f"""
-Eres un asistente experto en procesamiento de CVs. Tu tarea es extraer información de un CV y clasificar al candidato.
+    Eres un asistente experto en procesamiento de CVs. Tu tarea
+    es extraer información de un CV y clasificar al candidato.
 
-Instrucciones:
-1. Extrae información general:
-- nombre
-- correo
-- teléfono
-- educación
-- experiencia
-- habilidades
-- certificaciones
-- idiomas
-- cursos
+    Instrucciones:
+    1. Extrae información general:
+    - nombre
+    - correo
+    - teléfono
+    - educación
+    - experiencia
+    - habilidades
+    - certificaciones
+    - idiomas
+    - cursos
 
-2. Evalúa si el candidato es adecuado para el puesto:
+    2. Evalúa si el candidato es adecuado para el puesto:
 
-Requisitos mínimos para ser candidato:
-- Tener experiencia laboral mínima de 2 años en áreas administrativas, gestión o relacionadas con IA.
-- Contar con al menos 1 certificación o curso en IA, administración o áreas afines.
-- Mostrar nivel intermedio o avanzado en al menos 1 idioma (inglés preferente).
-- Incluir al menos 3 habilidades técnicas o administrativas relevantes al puesto.
+    Requisitos mínimos para ser candidato:
+    - Tener experiencia laboral mínima de 2 años en áreas administrativas,
+      gestión o relacionadas con IA.
+    - Contar con al menos 1 certificación o curso en IA, administración
+      o áreas afines.
+    - Mostrar nivel intermedio o avanzado en al menos 1 idioma
+      (inglés preferente).
+    - Incluir al menos 3 habilidades técnicas o administrativas
+      relevantes al puesto.
 
-Skills específicos requeridos:
-- Carreras afines:
-  - Ingeniería en Sistemas Computacionales
-  - Ingeniería en Desarrollo de Software
-  - Ingeniería en Mecatrónica
-  - Ingeniería en Ciencias de Datos
-- Perfil:
-  - Graduado o último semestre de la carrera
-  - Experiencia en gestión de proyectos
-  - Experiencia en lenguajes de programación (Python, JavaScript, Visual Basic, HTML, PHP)
-  - Conocimiento en bases de datos
-  - Conocimiento en IA
-  - Inglés intermedio o avanzado
-- Modalidad: Híbrida
-- Disponibilidad: Tiempo completo
+    Skills específicos requeridos:
+    - Carreras afines:
+    - Ingeniería en Sistemas Computacionales
+    - Ingeniería en Desarrollo de Software
+    - Ingeniería en Mecatrónica
+    - Ingeniería en Ciencias de Datos
+    - Perfil:
+    - Graduado o último semestre de la carrera
+    - Experiencia en gestión de proyectos
+    - Experiencia en lenguajes de programación (Python, JavaScript,
+      Visual Basic, HTML, PHP)
+    - Conocimiento en bases de datos
+    - Conocimiento en IA
+    - Inglés intermedio o avanzado
+    - Modalidad: Híbrida
+    - Disponibilidad: Tiempo completo
 
-- Si cumple con lo anterior, "candidato": true.
-- Si no cumple, "candidato": false y en "motivo_no_candidato" explica la razón principal.
-- De los cursos encontrados en el CV, solo devuelve los 10 más relevantes al perfil buscado.
+    - Si cumple con lo anterior, "candidato": true.
+    - Si no cumple, "candidato": false y en "motivo_no_candidato"
+      explica la razón principal.
+    - De los cursos encontrados en el CV, solo devuelve los 10 más
+      relevantes al perfil buscado.
 
-3. Devuelve todo en un JSON válido con esta estructura:
+    3. Devuelve todo en un JSON válido con esta estructura:
 
-{{
-    "informacion_general": {{
-        "nombre": "",
-        "correo": "",
-        "teléfono": [],
-        "educación": [],
-        "experiencia": [],
-        "habilidades": [],
-        "certificaciones": [],
-        "idiomas": []
-    }},
-    "candidato": true,
-    "motivo_no_candidato": ""
-}}
+    {{
+        "informacion_general": {{
+            "nombre": "",
+            "correo": "",
+            "teléfono": [],
+            "educación": [],
+            "experiencia": [],
+            "habilidades": [],
+            "certificaciones": [],
+            "idiomas": []
+        }},
+        "candidato": true,
+        "motivo_no_candidato": ""
+    }}
 
-4. Si algún campo no existe, usa "" o [] según corresponda.
-5. No agregues texto adicional, solo JSON válido.
+    4. Si algún campo no existe, usa "" o [] según corresponda.
+    5. No agregues texto adicional, solo JSON válido.
 
-Documento (CV):
----
-{content}
-"""
+    Documento (CV):
+    ---
+    {content}
+    """
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -172,6 +182,8 @@ app = FastAPI(title="API Procesamiento de CVs", version="1.0")
 
 
 @app.post("/procesar-cv/")
+
+# Funcion Asyncrona
 async def procesar_cv(file: UploadFile = File(...)):
     temp_path = f"temp_{file.filename}"
     try:
